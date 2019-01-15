@@ -529,6 +529,8 @@ fi
 # Check for mariabackup or xtrabackup
 if [ "$backuptool" == "1" ] && command -v mariabackup >/dev/null; then
     innobackupex=$(command -v mariabackup)
+    # mariabackup does not have encryption support
+    encrypt="no"
 elif [ "$backuptool" == "2" ] && command -v innobackupex >/dev/null; then
     innobackupex=$(command -v innobackupex)
 else
