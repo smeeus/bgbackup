@@ -553,7 +553,7 @@ else
     mail_log
     exit 1
 fi
-
+ 
 # Check that we are not already running
 
 lockfile=/tmp/bgbackup.lock
