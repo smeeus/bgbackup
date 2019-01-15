@@ -572,8 +572,6 @@ if [ "$?" -eq 1 ]; then
     log_status=FAILED
     mail_log
     exit 1
-else
-    $mysqlcommand "USE $backuphistschema"
 fi
 
 check_table=$($mysqlcommand "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$backuphistschema' AND table_name='backup_history' ")
