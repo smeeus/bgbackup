@@ -207,7 +207,11 @@ function backer_upper {
 
 # Function to prepare backup
 function backup_prepare {
-    prepcommand="$innobackupex $dirname --apply-log"
+    if [ "$backuptool" == "1" ] ; then
+        prepcommand="$innobackupex --prepare --target-dir $dirname"
+    else
+        prepcommand="$innobackupex $dirname --apply-log"
+    fi
     if [ -n "$databases" ]; then prepcommand=$prepcommand" --export"; fi
     log_info "Preparing backup."
     $prepcommand 2>> "$logfile"
