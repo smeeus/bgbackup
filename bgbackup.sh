@@ -53,7 +53,7 @@ function log_info() {
 function innocreate {
     mhost=$(hostname)
     innocommand="$innobackupex"
-    [ "$backuptool" == "1" ] && "$innocommand --backup --target-dir"
+    if [ "$backuptool" == "1" ] ; then innocommand=$innocommand" --backup --target-dir" ; fi
     dirdate=$(date +%Y-%m-%d_%H-%M-%S)
     alreadyfullcmd=$mysqlcommand" \"SELECT COUNT(*) FROM $backuphistschema.backup_history WHERE DATE(end_time) = CURDATE() AND butype = 'Full' AND status = 'SUCCEEDED' AND hostname = '$mhost' AND deleted_at = 0 \" "
     alreadyfull=$(eval "$alreadyfullcmd")
