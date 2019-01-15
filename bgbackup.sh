@@ -49,10 +49,11 @@ function log_info() {
     fi
 }
 
-# Function to create innobackupex command
+# Function to create innobackupex/mariabackup command
 function innocreate {
     mhost=$(hostname)
     innocommand="$innobackupex"
+    [ "$backuptool" == "1" ] && "$innocommand --backup --target-dir"
     dirdate=$(date +%Y-%m-%d_%H-%M-%S)
     alreadyfullcmd=$mysqlcommand" \"SELECT COUNT(*) FROM $backuphistschema.backup_history WHERE DATE(end_time) = CURDATE() AND butype = 'Full' AND status = 'SUCCEEDED' AND hostname = '$mhost' AND deleted_at = 0 \" "
     alreadyfull=$(eval "$alreadyfullcmd")
@@ -62,20 +63,24 @@ function innocreate {
         if ( ( [ "$(date +%A)" = "$fullbackday" ] || [ "$fullbackday" = "Everyday" ]) && [ "$alreadyfull" -eq 0 ] ) || [ "$anyfull" -eq 0 ] ; then
             butype=Full
             dirname="$backupdir/full-$dirdate"
-            innocommand=$innocommand" --backup --target-dir $dirname --no-timestamp"
+            innocommand=$innocommand" $dirname --no-timestamp"
         else
             if [ "$differential" = yes ] ; then
                 butype=Differential
                 diffbasecmd=$mysqlcommand" \"SELECT bulocation FROM $backuphistschema.backup_history WHERE status = 'SUCCEEDED' AND hostname = '$mhost' AND butype = 'Full' AND deleted_at = 0 ORDER BY start_time DESC LIMIT 1\" "
                 diffbase=$(eval "$diffbasecmd")
                 dirname="$backupdir/diff-$dirdate"
-                innocommand=$innocommand" --backup --target-dir $dirname --no-timestamp --incremental --incremental-basedir=$diffbase"
+                innocommand=$innocommand" $dirname --no-timestamp"
+                if [ "$backuptool" == "2" ] ; then innocommand=$innocommand" --incremental" ; fi
+                innocommand=$innocommand" --incremental-basedir=$diffbase"
             else
                 butype=Incremental
                 incbasecmd=$mysqlcommand" \"SELECT bulocation FROM $backuphistschema.backup_history WHERE status = 'SUCCEEDED' AND hostname = '$mhost' AND deleted_at = 0 ORDER BY start_time DESC LIMIT 1\" "
                 incbase=$(eval "$incbasecmd")
                 dirname="$backupdir/incr-$dirdate"
-                innocommand=$innocommand" --backup --target-dir $dirname --no-timestamp --incremental --incremental-basedir=$incbase"
+                innocommand=$innocommand" $dirname --no-timestamp"
+                if [ "$backuptool" == "2" ] ; then innocommand=$innocommand" --incremental" ; fi
+                innocommand=$innocommand" --incremental-basedir=$incbase"
             fi
         fi
     elif [ "$bktype" = "archive" ] ; then
@@ -116,11 +121,15 @@ function innocreate {
         else
             if [ "$differential" = yes ] ; then
                 butype=Differential
-                innocommand=$innocommand" $tempfolder --stream=$arctype --no-timestamp --incremental --incremental-basedir=$backupdir/.lsn_full --extra-lsndir=$backupdir/.lsn"
+                innocommand=$innocommand" $tempfolder --stream=$arctype --no-timestamp"
+                if [ "$backuptool" == "2" ] ; then innocommand=$innocommand" --incremental" ; fi
+                innocommand=$innocommand" --incremental-basedir=$backupdir/.lsn_full --extra-lsndir=$backupdir/.lsn"
                 arcname="$backupdir/diff-$dirdate.$arctype.gz"
             else
                 butype=Incremental
-                innocommand=$innocommand" $tempfolder --stream=$arctype --no-timestamp --incremental --incremental-basedir=$backupdir/.lsn --extra-lsndir=$backupdir/.lsn"
+                innocommand=$innocommand" $tempfolder --stream=$arctype --no-timestamp"
+                if [ "$backuptool" == "2" ] ; then innocommand=$innocommand" --incremental" ; fi
+                innocommand=$innocommand" --incremental-basedir=$backupdir/.lsn --extra-lsndir=$backupdir/.lsn"
                 arcname="$backupdir/inc-$dirdate.$arctype.gz"
             fi
         fi
